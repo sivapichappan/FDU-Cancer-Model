@@ -1,0 +1,7 @@
+{
+  "mode": "cause",
+  "n": 250,
+  "seed": 42,
+  "priors": "realistic",
+  "signal": 1.0
+}
