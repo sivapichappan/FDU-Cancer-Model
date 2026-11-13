@@ -1,151 +1,144 @@
-Synthetic data validation: n=250, seed=42, signal=1.0, priors=realistic
+Random synthetic data validation: n=250, seed=42, priors=realistic
 
-1. Structure and limits
------------------------
-[PASS] observed.csv has the same columns in both modes
-[PASS] cause-driven: every value within hard physiological limits
-[PASS] cause-driven: per-cause scores sum to 1 and the label has the top score
-[PASS] independent: every value within hard physiological limits
-[PASS] independent: per-cause scores sum to 1 and the label has the top score
-Class mix:
-                cause-driven  independent
-primary_cause                            
-thyroid                   50           48
-adrenal                   23           25
-growth_hormone             5            3
-sex_hormone               30           27
-inflammatory              37           43
-psychological            105          104
+1. Files and structure
+----------------------
+[PASS] ground_truth.csv and observed.csv have the expected columns
+[PASS] files match a fresh run with the saved settings (reproducible)
+[PASS] ground_truth.csv has no gaps (apart from the by-design blanks)
+[PASS] testosterone only for men; estradiol and menopausal status only for women
+[PASS] every value within hard physiological limits
+[PASS] per-cause scores sum to 1 and the primary cause has the top score
+Class mix (random labels):
+                patients  share
+primary_cause                  
+thyroid               38   0.15
+adrenal               27   0.11
+growth_hormone         5   0.02
+sex_hormone           32   0.13
+inflammatory          42   0.17
+psychological        106   0.42
 
-2. Cause signatures (cause-driven ground truth, medians)
---------------------------------------------------------
-[PASS] tsh median is highest in thyroid (thyroid 10.405 vs next inflammatory 1.67)
-[PASS] free_t4 median is lowest in thyroid (thyroid 0.85 vs next adrenal 1.18)
-[PASS] cortisol_am median is lowest in adrenal (adrenal 1.9 vs next inflammatory 8.3; patients not on hydrocortisone)
-[PASS] eosinophils median is highest in adrenal (adrenal 0.18 vs next sex_hormone 0.155)
-[PASS] igf1_sds median is lowest in growth_hormone (growth_hormone -2.29346 vs next adrenal -0.606526; age-adjusted)
-[PASS] testosterone median is lowest in sex_hormone (sex_hormone 276 vs next adrenal 378; men)
-[PASS] crp median is highest in inflammatory (inflammatory 9.1 vs next adrenal 1.9)
-[PASS] il6 median is highest in inflammatory (inflammatory 5 vs next adrenal 2.7)
-[PASS] tnf_alpha median is highest in inflammatory (inflammatory 2.5 vs next sex_hormone 1.5)
-[PASS] phq9 median is highest in psychological (psychological 11 vs next adrenal 7)
-[PASS] gad7 median is highest in psychological (psychological 8 vs next adrenal 5)
-[PASS] pcl5 median is highest in psychological (psychological 23 vs next adrenal 15)
-                      min      max  thyroid  adrenal  growth_hormo  sex_hormone  inflammatory  psychologica
-tsh                  0.02    74.04    10.40     1.59          1.25         1.60          1.67          1.52
-free_t4              0.41     1.97     0.85     1.18          1.45         1.23          1.21          1.19
-eosinophils          0.03     0.71     0.12     0.18          0.11         0.16          0.12          0.13
-crp                  0.10   146.20     1.25     1.90          0.80         1.15          9.10          1.50
-cortisol_am          1.10    34.60    10.20     2.00         21.70         9.25          8.30          8.80
-acth                 3.00   146.00    17.00     8.00          9.00        17.50         16.00         18.00
-phq9                 0.00    27.00     4.50     7.00          2.00         4.00          4.00         11.00
-gad7                 0.00    21.00     4.00     5.00          1.00         2.00          3.00          8.00
-pcl5                 0.00    80.00     8.00    15.00          8.00         8.50          9.00         23.00
-fact_m_total        87.00   158.00   129.00   131.00        136.00       131.50        128.00        124.00
-igf1                45.00   467.00   129.50   111.00         57.00       135.00        137.00        151.00
-lh                   0.30    73.30     6.15     5.10          6.20         5.10          5.70          7.20
-fsh                  0.30   133.70     7.00     8.50          8.10         4.45          6.60          6.70
-testosterone       103.00  1138.00   472.00   378.00        698.00       276.00        395.00        461.00
-estradiol            4.00   334.00    15.00     9.00          8.50        13.00         14.00         11.00
-il6                  0.30    19.30     2.30     2.70          1.80         2.15          5.00          1.90
-tnf_alpha            0.40     7.00     1.30     1.30          0.90         1.50          2.50          1.20
-hvlt_total_recall    8.00    36.00    25.00    25.00         25.00        25.00         24.00         23.00
-tmt_b_seconds       32.00   233.00    94.00    82.00         84.00        80.00         95.00         91.00
-cowa_total           9.00    64.00    34.50    36.00         35.00        40.00         38.00         36.00
-Overlap outside the matching class: TSH 4.5-10 6%, testosterone <300 in men 18%, CRP >5 12%, PHQ-9 >=10 in endocrine classes 22%
-Distress scales Spearman r: 0.56-0.59; secondary cause present in 24%
+2. Value ranges (ground truth; compare with the 'normal' column of the data dictionary)
+---------------------------------------------------------------------------------------
+                             min      5%     50%     95%      max                                         normal
+age                        33.00   42.00   60.00   82.00    95.00                                25-90, mean ~61
+months_since_therapy_end   13.00   15.00   30.00   66.55   100.00                              12-96, median ~30
+irae_max_grade              0.00    0.00    1.00    3.00     4.00                                            0-4
+prednisone_equiv_mg_day     0.00    0.00    0.00    2.50    10.00                      0 for most; 2.5-10 in ~8%
+hydrocortisone_mg_day       0.00    0.00    0.00    0.00    25.00                 15-25 if adrenal insufficiency
+levothyroxine_mcg_day       0.00    0.00    0.00  112.00   175.00            25-200 (~1.6 mcg/kg) if hypothyroid
+tsh                         0.18    0.72    1.64    3.37     5.68                                        0.4-4.5
+free_t4                     0.62    0.92    1.23    1.52     1.74                                        0.8-1.8
+wbc                         3.30    4.34    6.30    9.30    13.00                                       4.0-11.0
+anc                         1.71    2.33    3.78    6.55     9.64                                        1.8-7.7
+alc                         0.73    1.08    1.78    2.92     4.41                                        1.0-4.0
+eosinophils                 0.02    0.05    0.13    0.41     0.61                                        0.0-0.5
+hemoglobin                 11.10   12.19   14.30   16.40    18.50                       M 13.5-17.5, F 12.0-15.5
+platelets                 109.00  175.45  246.00  335.00   387.00                                        150-400
+crp                         0.10    0.20    1.30    6.01    31.60                               <5 (median ~1.5)
+cortisol_am                 2.90    5.20    8.90   17.31    26.40  5-19.5 at 08:00 (newer assays); <3 strongly s
+acth                        6.00   10.45   23.00   45.55   135.00  7-63; primary AI >2x ULN; secondary AI <20-30
+phq9                        0.00    0.00    3.00    9.00    14.00  0-27; 5/10/15/20 = mild/moderate/mod-severe/s
+gad7                        0.00    0.00    2.00    7.00    13.00           0-21; 5/10/15 = mild/moderate/severe
+fact_g                     48.00   65.00   82.00  103.55   108.00               0-108; general population ~80-85
+fact_m_total               82.00  100.45  130.00  158.00   172.00                      0-172; survivors ~125-140
+baseline_cog_z             -2.97   -1.69   -0.08    1.46     2.61                                   mean 0, SD 1
+igf1                       42.00   76.00  145.00  287.00   535.00   age-dependent; ~115-300 at 40, ~65-200 at 70
+lh                          0.50    1.50    5.85   27.16    51.80  M 1.5-9.3; premenopausal F 2-15 (mid-cycle to
+fsh                         0.40    1.30   10.10   60.77   250.00  M 1.5-12.4; premenopausal F 3-10; postmenopau
+testosterone              195.00  252.60  485.00  896.20  1068.00                                        264-916
+estradiol                   1.00    4.80   26.00  120.80   365.00  premenopausal 30-400 (cycle-dependent); postm
+il6                         0.30    0.70    1.90    4.80     8.90         <6.4 (assay-dependent; rises with age)
+tnf_alpha                   0.40    0.60    1.20    2.45     3.80           <=2.8 (median ~1.2; assay-dependent)
+hvlt_total_recall          13.00   17.45   26.00   34.00    36.00                      0-36; ~26 +/- 5 at age 60
+tmt_b_seconds              33.00   49.00   78.00  144.10   200.00     ~65-85 +/- 25 at ages 55-64; capped at 300
+cowa_total                 10.00   20.00   39.00   55.00    69.00                                     ~38 +/- 11
+pcl5                        0.00    1.00    8.00   24.00    36.00                    0-80; probable PTSD >=31-33
 
-3. Missingness (observed.csv)
------------------------------
-[PASS] cortisol ordered far more often in the adrenal class (MNAR) (adrenal 83% vs others 22%)
-[PASS] cause-driven: no cortisol without a draw time (0 rows)
-[PASS] cause-driven: complete Tier 3 rows near 181 (185 of 250)
-[PASS] independent: no cortisol without a draw time (0 rows)
-[PASS] independent: complete Tier 3 rows near 181 (182 of 250)
-Share present by column, cause-driven (testosterone, estradiol, menopausal_status are blank for one sex by design):
+3. Missingness (observed.csv; every gap is random)
+--------------------------------------------------
+[PASS] no cortisol without a draw time (0 rows)
+[PASS] complete Tier 3 rows near 181 (176 of 250)
+Share present by column (testosterone, estradiol and menopausal_status are blank for one sex by design):
                          share present
-menopausal_status                 0.34
+menopausal_status                 0.39
 tsh                               0.97
 free_t4                           0.97
-wbc                               0.97
-anc                               0.97
-alc                               0.97
-eosinophils                       0.97
-hemoglobin                        0.97
-platelets                         0.97
-crp                               0.92
-cortisol_am                       0.23
+wbc                               0.96
+anc                               0.96
+alc                               0.96
+eosinophils                       0.96
+hemoglobin                        0.96
+platelets                         0.96
+crp                               0.87
+cortisol_am                       0.24
 acth                              0.20
-cortisol_draw_time                0.23
-cortisol_missing_reason           0.77
-phq9                              0.54
-gad7                              0.52
-qol_instrument                    0.32
-fact_g                            0.32
-fact_m_total                      0.26
+cortisol_draw_time                0.24
+cortisol_missing_reason           0.76
+phq9                              0.46
+gad7                              0.44
+qol_instrument                    0.30
+fact_g                            0.30
+fact_m_total                      0.24
 baseline_cog_z                    0.10
-tier3_draw_time                   0.82
-fasting                           0.82
-igf1                              0.81
-lh                                0.80
-fsh                               0.81
-testosterone                      0.53
-estradiol                         0.27
-il6                               0.81
-tnf_alpha                         0.81
-hvlt_total_recall                 0.81
-tmt_b_seconds                     0.82
-cowa_total                        0.80
-pcl5                              0.81
-secondary_cause                   0.24
-Below-detection-limit strings: crp 7, acth 2, estradiol 2, il6 17, tnf_alpha 3
+tier3_draw_time                   0.80
+fasting                           0.80
+igf1                              0.79
+lh                                0.79
+fsh                               0.79
+testosterone                      0.48
+estradiol                         0.32
+il6                               0.79
+tnf_alpha                         0.80
+hvlt_total_recall                 0.79
+tmt_b_seconds                     0.80
+cowa_total                        0.79
+pcl5                              0.78
+secondary_cause                   0.44
+Below-detection-limit strings: crp 16, estradiol 5, il6 25
 
-4. Co-occurrence audit (cause-driven observed, mirrors the proposal's first deliverable)
-----------------------------------------------------------------------------------------
-Patients with 2+ Tier 1/2 feature groups at the visit: 249 of 250
-Patients with 1+ Tier 2 group beside the Tier 1 labs: 199; with 2+ Tier 2 groups: 84
+Co-occurrence audit (mirrors the proposal's first deliverable):
+Patients with 2+ Tier 1/2 feature groups at the visit: 250 of 250
+Patients with 1+ Tier 2 group beside the Tier 1 labs: 190; with 2+ Tier 2 groups: 70
 Number of Tier 2 groups present per patient:
    patients
-0        51
-1       115
-2        70
-3        12
-4         2
+0        60
+1       120
+2        56
+3        13
+4         1
 Pairwise co-occurrence (patients with both groups):
                     thyroid labs  CBC  CRP  cortisol  PHQ-9/GAD-7  QoL  baseline cognition
-thyroid labs                 242  236  222        55          129   78                  25
-CBC                          236  242  222        56          129   78                  26
-CRP                          222  222  229        52          122   77                  23
-cortisol                      55   56   52        58           30   17                   8
-PHQ-9/GAD-7                  129  129  122        30          134   43                  13
-QoL                           78   78   77        17           43   81                   7
-baseline cognition            25   26   23         8           13    7                  26
+thyroid labs                 243  234  211        58          111   72                  25
+CBC                          234  241  210        57          108   74                  24
+CRP                          211  210  217        50          101   67                  26
+cortisol                      58   57   50        59           27   16                   4
+PHQ-9/GAD-7                  111  108  101        27          115   31                  15
+QoL                           72   74   67        16           31   75                   8
+baseline cognition            25   24   26         4           15    8                  26
 
-5. Leakage scan: one feature at a time (cause-driven observed)
---------------------------------------------------------------
-[PASS] no single feature nearly determines a class (one-vs-rest AUC <= 0.95, classes with 20+ cases)
+4. No pattern in the data
+-------------------------
+[PASS] columns are unrelated: average |Spearman r| near the pure-noise level (0.053; noise alone gives ~0.051)
+Largest chance correlations (for review; values up to ~0.3 happen by chance at this size):
+                       a             b      r
+0              estradiol    cowa_total  0.239
+1                    age     estradiol -0.237
+2                    age  testosterone -0.223
+3  levothyroxine_mcg_day  fact_m_total -0.214
+4           testosterone     tnf_alpha  0.192
+[PASS] no single column predicts the cause (one-vs-rest AUC <= 0.75, classes with 20+ cases)
 Too few cases to judge (shown, not tested): growth_hormone
-Strongest single-feature signals (for review):
-                 feature           class    auc  cases
-0  hydrocortisone_mg_day  growth_hormone  0.964      5
-1      irae_hypophysitis  growth_hormone  0.934      5
-2                    tsh         thyroid  0.892     50
-3       irae_thyroiditis         thyroid  0.868     50
-4                   igf1  growth_hormone  0.855      5
-5                free_t4         thyroid  0.830     50
-6                regimen  growth_hormone  0.800      5
-7      irae_hypophysitis         adrenal  0.784     23
-8                    anc  growth_hormone  0.779      5
-9       cortisol_ordered         adrenal  0.757     23
-
-6. Learnable signal (5-fold CV on observed.csv; sanity check, not the model)
-----------------------------------------------------------------------------
-[PASS] independent mode: logistic accuracy near the majority-class rate (0.23 vs majority 0.42)
-[PASS] cause-driven mode: logistic accuracy well above majority (0.68 vs majority 0.42)
-[PASS] independent mode: ridge R^2 on per-cause scores ~0 (mean R^2 -0.06)
-[PASS] cause-driven mode: ridge R^2 on per-cause scores clearly positive (mean R^2 0.30)
+Strongest single-column results (chance level is 0.5):
+           feature           class    auc  cases
+0              crp  growth_hormone  0.829      5
+1              anc  growth_hormone  0.693      5
+2              fsh  growth_hormone  0.656      5
+3  tier3_draw_time         thyroid  0.654     38
+4              age  growth_hormone  0.627      5
+[PASS] all columns together: logistic accuracy no better than always guessing the biggest class (0.28 vs 0.42)
+[PASS] all columns together: ridge R^2 on per-cause scores ~0 or below (mean R^2 -0.07)
 On pure noise, accuracy below the majority rate and negative R^2 are expected (the fit chases noise).
-[PASS] accuracy rises with --signal (signal 0.5: 0.54, signal 1.0: 0.68, signal 2.0: 0.70)
 
 Result
 ------

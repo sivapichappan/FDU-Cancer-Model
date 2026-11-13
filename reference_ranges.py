@@ -1,9 +1,9 @@
 """Variable specifications for the synthetic checkpoint-inhibitor survivor dataset.
 
-One entry per column. The generator reads limits, detection limits and rounding
-from here, the independent (null) mode samples each column from its `dist`, and
-data/data_dictionary.csv is written from this file, so every range lives in one
-place. Reference intervals are typical adult values; real assays differ by lab.
+One entry per column. The generator draws each column at random from its `dist`
+and reads limits, detection limits and rounding from here. data/data_dictionary.csv
+is written from this file, so every range lives in one place. Reference intervals
+are typical adult values; real assays differ by lab.
 """
 from __future__ import annotations
 
@@ -40,9 +40,12 @@ class Var:
     hard_max: float | None = None
     lod: float | None = None  # below this, observed.csv reports "<lod"
     decimals: int = 1
-    dist: tuple = ()  # marginal used by independent mode, see sample_marginal()
-    signal: str = ""  # how the cause-driven generator shifts this column
-    missing: str = ""  # missingness rule in observed.csv (cause-driven mode)
+    dist: tuple = ()  # distribution the random generator draws from, see sample_marginal()
+    # What each cause does to this column in real patients. Notes only: the random
+    # generator ignores them and they are left out of data_dictionary.csv. Kept for
+    # checking the real MSK data later.
+    signal: str = ""
+    missing: str = ""  # missingness rule in observed.csv (all gaps are random)
     source: str = ""
     observed_only: bool = False  # exists only in observed.csv
 
@@ -138,7 +141,7 @@ VARIABLES = [
         hard_min=0.1, hard_max=6, decimals=2, dist=("normal", 1.2, 0.17),
         signal="Hypothyroid down (0.4-0.9); over-replacement up", missing="~3% random (with TSH)",
         source="Mayo Clinic Laboratories"),
-    Var("wbc", "1", "cbc", "White blood cell count (sum of differential)", "x10^9/L", normal="4.0-11.0",
+    Var("wbc", "1", "cbc", "White blood cell count", "x10^9/L", normal="4.0-11.0",
         hard_min=0.5, hard_max=50, decimals=1, dist=("lognormal", 6.4, 0.22),
         signal="Inflammation and prednisone up", missing="~4% random (whole CBC)",
         source="Standard adult interval"),
@@ -167,9 +170,8 @@ VARIABLES = [
         source="Mayo Clinic Laboratories"),
 
     # ---------------- Tier 2 ----------------
-    Var("cortisol_ordered", "2", "adrenal_labs", "Cortisol was ordered (presence is itself a signal)",
-        kind="binary", observed_only=True,
-        missing="MNAR: ~15% baseline, +70% x adrenal deficit, +30% with hypophysitis, steroid or hydrocortisone",
+    Var("cortisol_ordered", "2", "adrenal_labs", "Cortisol was ordered",
+        kind="binary", observed_only=True, missing="~25% of patients, at random",
         source="Proposal data conditions"),
     Var("cortisol_am", "2", "adrenal_labs", "Serum cortisol (morning draw intended)", "ug/dL",
         normal="5-19.5 at 08:00 (newer assays); <3 strongly suggests AI",
@@ -192,7 +194,7 @@ VARIABLES = [
         "0-27; 5/10/15/20 = mild/moderate/mod-severe/severe", 0, 27, decimals=0,
         dist=("poisson_gamma", 4, 4, 27),
         signal="Psychological up (12-24); endocrine and inflammatory deficits mildly up (somatic items)",
-        missing="~50% present; more often when distress is high", source="Kroenke 2001 J Gen Intern Med"),
+        missing="~50% present, at random", source="Kroenke 2001 J Gen Intern Med"),
     Var("gad7", "2", "mood_scales", "GAD-7 anxiety score", "points", "integer",
         "0-21; 5/10/15 = mild/moderate/severe", 0, 21, decimals=0, dist=("poisson_gamma", 3, 4, 21),
         signal="Psychological up; levothyroxine over-replacement up",
@@ -211,11 +213,11 @@ VARIABLES = [
     Var("baseline_cog_z", "2", "baseline_cognition", "Pre-treatment cognitive composite", "z-score",
         normal="mean 0, SD 1", hard_min=-5, hard_max=4, decimals=2, dist=("normal", 0, 1),
         signal="Correlates ~0.75 with current cognitive trait (per-patient baseline)",
-        missing="~8% present; ~43% with brain metastases", source="Assumption"),
+        missing="~10% present, at random", source="Assumption"),
 
     # ---------------- Tier 3 ----------------
     Var("tier3_refused", "3", "tier3_admin", "Declined the prospective Tier 3 visit", kind="binary",
-        observed_only=True, missing="~20%; more often older or more distressed patients",
+        observed_only=True, missing="~20%, at random",
         source="Proposal: ~300 complete of ~400"),
     Var("tier3_draw_time", "3", "tier3_admin", "Clock time of Tier 3 blood draw", "HH:MM", "time",
         "07:30-10:30 (90%)", dist=("time", 7.5, 11.0), signal="Afternoon draw lowers testosterone",
@@ -275,13 +277,14 @@ VARIABLES = [
         kind="categorical", normal="fatigue 50% / low_mood 25% / cognitive 25%",
         dist=("choice", ["fatigue", "low_mood", "cognitive"], [0.5, 0.25, 0.25]),
         source="Proposal: all six causes present identically"),
-    Var("primary_cause", "label", "label", "Cause with the largest share of symptom burden (6-class label)",
-        kind="categorical", normal=" / ".join(CAUSES), source="Generator stage D"),
-    Var("secondary_cause", "label", "label", "Second cause if its share is above 0.25 (else blank)",
-        kind="categorical", source="Generator stage D"),
+    Var("primary_cause", "label", "label", "Cause of the symptoms (6-class label; random)",
+        kind="categorical", normal=" / ".join(CAUSES), source="Random draw (--priors sets the class mix)"),
+    Var("secondary_cause", "label", "label", "Second-highest scoring cause if its score is above 0.25 (else blank)",
+        kind="categorical", source="Follows from the random scores"),
 ] + [
-    Var(f"score_{c}", "target", "target", f"Share of symptom burden from {c.replace('_', ' ')} (six scores sum to 1)",
-        "fraction", normal="0-1", hard_min=0, hard_max=1, decimals=4, source="Generator stage D")
+    Var(f"score_{c}", "target", "target",
+        f"Share of symptom burden from {c.replace('_', ' ')} (random; six scores sum to 1, primary cause highest)",
+        "fraction", normal="0-1", hard_min=0, hard_max=1, decimals=4, source="Random draw (flat Dirichlet)")
     for c in CAUSES
 ]
 
@@ -289,42 +292,9 @@ SPEC = {v.name: v for v in VARIABLES}
 OBSERVED_COLUMNS = [v.name for v in VARIABLES]
 GROUND_TRUTH_COLUMNS = [v.name for v in VARIABLES if not v.observed_only]
 
-# Hidden physiological states, stored only in the cause-driven ground_truth.csv
-HIDDEN = {
-    "menstrual_phase": "Premenopausal women: follicular / ovulatory / luteal (explains LH/estradiol spread)",
-    "dmg_primary_hypothyroid": "Thyroid gland permanently damaged by thyroiditis",
-    "dmg_hypophysitis": "Pituitary inflammation occurred",
-    "dmg_central_hypothyroid": "Persistent TSH deficiency after hypophysitis",
-    "dmg_acth_deficiency": "Secondary adrenal insufficiency (every hypophysitis; permanent)",
-    "dmg_primary_adrenal": "Primary adrenal insufficiency (adrenalitis)",
-    "dmg_gh_deficiency": "Persistent GH deficiency after hypophysitis",
-    "dmg_gonadal_pituitary": "Persistent gonadotropin deficiency after hypophysitis",
-    "dmg_functional_hypogonadism": "Functional low sex hormones (age, steroids, stress)",
-    "chronic_inflammatory_irae": "Ongoing inflammatory irAE (arthritis, colitis, etc.)",
-    "thyroid_replacement_status": "none / untreated / adequate / under / over",
-    "adrenal_replacement_status": "none / untreated / adequate / under",
-    "sex_replacement_status": "none / untreated / replaced",
-    "severity_thyroid": "Gland damage 0-1 before replacement",
-    "severity_adrenal": "Gland damage 0-1 before replacement",
-    "severity_gh": "Gland damage 0-1 (never replaced)",
-    "severity_sex": "Gland damage 0-1 before replacement",
-    "deficit_thyroid": "Current deficit 0-1 after replacement (over-replacement scored as 0.2-0.45)",
-    "deficit_adrenal": "Current deficit 0-1 after replacement",
-    "deficit_gh": "Current deficit 0-1",
-    "deficit_sex": "Current deficit 0-1 after replacement (x0.2 for postmenopausal pituitary loss)",
-    "inflammation_factor": "Latent inflammation (SD units; chronic irAE adds 1.5-3)",
-    "distress_factor": "Latent psychological distress (SD units)",
-    "cognition_factor": "Latent current cognition (SD units; higher is better)",
-    **{f"burden_{c}": f"Raw symptom burden from {c.replace('_', ' ')} (score = burden / total)" for c in CAUSES},
-    "true_cortisol_0800_endogenous": "Gland cortisol output at 08:00 with no steroid, hydrocortisone, draw-time or assay effect (ug/dL)",
-    "hc_hours_since_dose": "Hours since last hydrocortisone dose at the cortisol draw (blank if not on hydrocortisone)",
-    "true_igf1_sds": "Age-adjusted IGF-1 standard deviation score",
-    "true_testosterone_0800_fasting": "Gland testosterone at 08:00 fasting, before replacement (men, ng/dL)",
-}
-
 
 def sample_marginal(rng, var, n):
-    """Draw n values of one column from its population marginal (independent mode)."""
+    """Draw n values of one column from its typical population distribution."""
     kind, *p = var.dist
     if kind == "normal":
         x = rng.normal(p[0], p[1], n)
@@ -356,13 +326,8 @@ def hhmm_to_hours(series):
 
 
 def data_dictionary():
-    cols = [f.name for f in fields(Var)]
-    rows = [{c: getattr(v, c) for c in cols} for v in VARIABLES]
-    for name, desc in HIDDEN.items():
-        rows.append({"name": name, "tier": "hidden", "group": "hidden", "description": desc,
-                     "missing": "ground_truth.csv only (cause-driven mode)", "observed_only": False})
-    df = pd.DataFrame(rows, columns=cols)
+    cols = [f.name for f in fields(Var) if f.name != "signal"]
+    df = pd.DataFrame([{c: getattr(v, c) for c in cols} for v in VARIABLES], columns=cols)
     df["dist"] = df["dist"].map(lambda d: "" if not d else repr(d))
-    df["in_files"] = np.where(df.tier == "hidden", "ground_truth (cause-driven)",
-                              np.where(df.observed_only.astype(bool), "observed", "ground_truth, observed"))
+    df["in_files"] = np.where(df.observed_only, "observed", "ground_truth, observed")
     return df.drop(columns="observed_only")
